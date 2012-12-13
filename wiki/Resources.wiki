@@ -12,3 +12,7 @@
 [http://www.homebuiltrovs.com/rovforum/index.php homebuiltrovs forum]
 
 [http://www.homebuiltrovs.com/rovforum/viewtopic.php?f=16&t=904 forum:Lipo Battery's at depths?]
+
+[http://libopensea.com/ The Open Software and Equipment Architecture (OpenSEA) is an open source software library developed and maintained by the unmanned vehicle community.]
+
+[http://openrov.com/]
