@@ -1,0 +1,14 @@
+#summary related online resources
+
+[http://www.o-vations.com/marinetech/index.html#glossary Dummy's Guide to Marine Technology]
+
+[http://www.ffi.no/no/Publikasjoner/Documents/Exposure%20of%20lithium%20batteries%20to%20external%20hydrostatic%20pressure.pdf Exposure of lithium batteries to external hydrostatic pressure]
+
+
+[http://www.homebuiltrovs.com/]
+
+[http://www.homebuiltrovs.com/pressurechamber.html PVC Pressure Testing Chamber]
+
+[http://www.homebuiltrovs.com/rovforum/index.php homebuiltrovs forum]
+
+[http://www.homebuiltrovs.com/rovforum/viewtopic.php?f=16&t=904 forum:Lipo Battery's at depths?]
