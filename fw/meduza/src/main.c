@@ -4,7 +4,7 @@
  * $Id$
  */
 
-#include <stdlib.h>
+// #include <stdlib.h>
 #include <p24Fxxxx.h>
 
 _CONFIG1 (JTAGEN_OFF & GCP_OFF & GWRP_OFF & COE_OFF & FWDTEN_OFF & ICS_PGx2)
@@ -26,6 +26,20 @@ _CONFIG2 (FNOSC_FRCPLL)
 #define		U1_BRGH		1
 // rate		[bit/s]		4,000,000
 
+// MMA8452QL -- Digital Accelerometer
+// R8 = short
+// #define		I2C_ACC			0x38
+// R8 = open
+#define		I2C_ACC			0x3A
+
+// MAG3110 -- Three-Axis, Digital Magnetometer
+#define		I2C_MAG			0x1C
+
+// MCP9800 -- High-Accuracy Temperature Sensor
+#define		I2C_TMP			0x90
+
+// L3GD20 -- three-axis digital output gyroscope
+#define		I2C_GYR			0xD4
 
 unsigned led_green_state;
 unsigned led_red_state;
@@ -35,13 +49,38 @@ unsigned rc_state;
 unsigned long rc_command;
 unsigned state;
 
+void Wait (unsigned int time) {
+	unsigned int i;
+	while (time--) {
+		i = 1000;
+		while (i--) { Nop (); } // unknown delay
+	}
+}
+
+void StatusLED (unsigned status) { // Yellow color (for some reason)
+	TRISCbits.TRISC4 = 0;    // output
+	if (status) {
+		LATCbits.LATC4 = 0; // on
+	} else {
+		LATCbits.LATC4 = 1; // off
+	}
+}
+
+void LEDs_Init (void) {
+	TRISC = 0xffff; // off
+	StatusLED (1);
+	Wait (1000);
+	StatusLED (0);
+	Wait (1000);
+}
+
+
 void CLK_Init (void) {
     CLKDIVbits.RCDIV = 0;
     __builtin_write_OSCCONH(1);
     __builtin_write_OSCCONL(1);
     OSCCONbits.OSWEN = 1;
 }
-
 void T1_Init(void) {
     TMR1            = 0;           // clear timer1 register
     PR1             = TMR1_PERIOD; // set period1 register
@@ -76,14 +115,95 @@ void IC1_Init (void) {
     IFS0bits.IC1IF   = 0; // clear IC1 interrupt flag
     IEC0bits.IC1IE   = 1; // enable interrupts
 }
-void LEDs_Init (void) {
-    led_green_state = 0;
-    led_red_state = 0;
-    TRISA = 0xFFFF; // off
-    TRISB = 0xFFFF; // off
-    TRISAbits.TRISA4 = 0; // green
-    TRISAbits.TRISA9 = 0; // red
+void TestPorts (void) {
+    unsigned i, j;
+    TRISA = 0; // on
+    TRISB = 0; // on
+    TRISC = 0; // on
+    j = 0;
+    while (1) {
+        LATA = j;
+        LATB = j;
+        LATC = j;
+        for (i = 0; i < 50; i++) {}
+        j++;
+    }
 }
+unsigned int I2C_Init (void) {
+    TRISBbits.TRISB2 = 0; // on SDA2
+
+    I2C2BRG = 39; // 100KHz
+    I2C2CON = 0x1200;
+    I2C2RCV = 0x0000;
+    I2C2TRN = 0x0000;
+    // Now we can enable the peripheral
+    I2C2CON = 0x9200;
+}
+void I2C_wait_for_idle (void) {
+    while (I2C2STATbits.TRSTAT); // Wait for bus Idle
+}
+void I2C_write (unsigned char data) {
+	I2C2TRN = data;
+	while (I2C2STATbits.TBF);
+        I2C_wait_for_idle ();
+}
+void I2C_ByteWrite (unsigned char a0, unsigned char a1, unsigned char d) {
+	I2C_wait_for_idle ();
+	I2C2CONbits.SEN = 1; while (I2C2CONbits.SEN); // Start
+	I2C_write (a0); // 7-bit address + rw=0 (write)
+	if (!I2C2STATbits.ACKSTAT) {
+		I2C_wait_for_idle ();
+		I2C_write (a1);
+		if (!I2C2STATbits.ACKSTAT) {
+			I2C_wait_for_idle ();
+			I2C_write (d);
+		}
+	}
+	I2C_wait_for_idle ();
+	I2C2CONbits.PEN = 1; while (I2C1CONbits.PEN); // Stop
+}
+
+void I2C_Read (unsigned char a0, unsigned char a1, unsigned char length) {
+	unsigned i, tmp;
+	I2C_wait_for_idle ();
+	I2C2CONbits.SEN = 1; while (I2C2CONbits.SEN); // Start
+	I2C_write (a0); // 7-bit address + rw=0 (write)
+	if (!I2C2STATbits.ACKSTAT) { // slave sends an acknowledgement
+		I2C_wait_for_idle ();
+		// master transmits the address of the register to read
+		I2C_write (a1); // DR_STATUS
+		if (!I2C2STATbits.ACKSTAT) { // slave sends an acknowledgement
+			I2C_wait_for_idle ();
+			I2C2CONbits.RSEN = 1; while (I2C2CONbits.RSEN); // Restart
+			// followed by the slave address with the R/W bit set to “1” for a read from the previously selected register
+			I2C_write (a0 | 1); // 0x0E + read=1
+			if (!I2C2STATbits.ACKSTAT) { // slave then acknowledges
+				for (i = 0; i < (length - 1); i++) {
+					I2C2CONbits.RCEN = 1; //  and transmits the data from the requested register.
+					I2C2CONbits.ACKDT = 0;
+					while(!I2C2STATbits.RBF); // Wait for receive bufer to be full
+					tmp = I2C2RCV;
+					I2C2CONbits.ACKEN = 1; // ACK
+					while (I2C2CONbits.ACKEN); // wait for ACK to complete
+					I2C_wait_for_idle ();
+				}
+				I2C2CONbits.RCEN  = 1; //  and transmits the data from the requested register.
+				I2C2CONbits.ACKDT = 1;
+				while(!I2C2STATbits.RBF); // Wait for receive bufer to be full
+				tmp = I2C2RCV;
+				I2C2CONbits.ACKEN = 1; // NACK
+				while(I2C2CONbits.ACKEN);		//wait for ACK to complete
+				I2C_wait_for_idle ();
+			}
+		}
+	}
+	// followed by a stop condition (SP) signaling the end of transmission.
+	I2C2CONbits.PEN = 1; while (I2C1CONbits.PEN); // Stop
+}
+
+
+
+
 void U1_Init (void) {
     U1MODEbits.BRGH   = U1_BRGH;
     U1BRG             = U1_BRG;
@@ -233,16 +353,45 @@ void __attribute__((__interrupt__)) _ADC1Interrupt(void) {
 //    AD1CON1 = 0x00E0; // SSRC<2:0> = 111 implies internal counter ends sampling
 }
 
+
 int main(int argc, char** argv) {
-    CLK_Init ();
-    U1_Init ();
-    LEDs_Init ();
-    T1_Init ();
-    T3_Init ();
-    IC1_Init ();
-    RC_StateMachine_Init ();
-    ADC_Init ();
-    SD_Init ();
-    while (1) Idle ();
-    return (EXIT_SUCCESS);
+	unsigned i, j;
+	I2C_Init ();
+	LEDs_Init ();
+
+/*
+	I2C_Read (I2C_MAG, 0, 10);
+	LEDs_Init ();
+
+	I2C_Read (I2C_ACC, 0, 10);
+	LEDs_Init ();
+
+	I2C_Read (I2C_TMP, 0, 4);
+	LEDs_Init ();
+*/
+
+	I2C_Read (I2C_GYR, 0, 5);
+	LEDs_Init ();
+
+/*
+	I2C_ByteWrite (0x90, 1, 0x60);
+	I2C_ByteWrite (0x90, 1, 0x60);
+	for (i = 0; i < 100; i++) {
+		I2C_Read (0x90, 0, 2); // MCP9800
+		for (j = 0; j < 60000; j++) { }
+	}
+*/
+
+	LEDs_Init ();
+
+//    CLK_Init ();
+//    U1_Init ();
+//    T1_Init ();
+//    T3_Init ();
+//    IC1_Init ();
+//    RC_StateMachine_Init ();
+//    ADC_Init ();
+//    SD_Init ();
+	while (1) Idle ();
+//	return (EXIT_SUCCESS);
 }
