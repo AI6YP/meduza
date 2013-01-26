@@ -406,7 +406,7 @@ void Init_Ports (void) {
 
 void __attribute__((__interrupt__)) _IC1Interrupt (void) {
 	unsigned long tmp_command;
-	unsigned i, j;
+	unsigned i, j, dat = 0;
 	tmp_command = RC_StateMachine ();
 	if (tmp_command) {
 		if (tmp_command == 0x007FE11E) { // PLAY
@@ -414,14 +414,14 @@ void __attribute__((__interrupt__)) _IC1Interrupt (void) {
 			StatusShow (2, 2); // Morse: A .-
 		} else if (tmp_command == 0x007FB44B) { // 0
 //			data_counter = 0;
-			SD_write_head ();
 			for (j = 0; j < 100; j++) {
+				SD_write_head (j >> 8);
 				for (i = 0; i < 255; i++) {
-					SD_write_data (i);
+					SD_write_data (dat--);
 				}
 				SD_write_crc ();
+				SD_write_tail ();
 			}
-			SD_write_tail ();
 			StatusShow (1, 4); // Morse: B -...
 //			ACC_Start ();
 		}

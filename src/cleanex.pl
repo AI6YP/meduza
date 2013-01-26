@@ -37,11 +37,14 @@ sub decode {
 {
 	die "usage: cleanex.pl logfile\n" unless ($#ARGV == 0);
 	my $nname = $ARGV[0];
-	open(INP, "<$nname") or die "Could not open file - input file: $!";
+	open (INP, "<${nname}") or die "Could not open file - input file: $!";
 	binmode INP;
 	my $stream;
-	my $length = read (INP, $stream, 100000000);
-	close(INP);
+	my $length = read (INP, $stream, 1000000); # 100000000
+	close (INP);
+	
+	open (OUT, ">${nname}.f1") or die "Could not open file - output file: $!";
+	binmode OUT;
 
 	my @STREAM = ();
 	if (substr ($stream, 0, 2) eq 'FF') { # text mode
@@ -104,8 +107,11 @@ sub decode {
 				} else {
 					print '_';
 				}
+				print OUT $a;
 			}
 		}
 	}
 	print "\n$block full blocks\n";
+
+	close (OUT);
 }
