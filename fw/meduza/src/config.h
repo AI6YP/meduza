@@ -10,6 +10,7 @@
 #define		TMR3_PRE		3
 #define		ADC_CONV_PERIOD		15
 
+// remote control
 #define		RC_ZERO_MIN		45
 #define		RC_ZERO_MAX		84
 #define		RC_ONE_MIN		98
