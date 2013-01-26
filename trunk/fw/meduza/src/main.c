@@ -7,41 +7,16 @@
 // #include <stdlib.h>
 #include <p24Fxxxx.h>
 #include "config.h"
+#include "status.h"
 
 _CONFIG1 (JTAGEN_OFF & GCP_OFF & GWRP_OFF & COE_OFF & FWDTEN_OFF & ICS_PGx2)
 _CONFIG2 (FNOSC_FRCPLL)
-
-unsigned led_green_state;
-unsigned led_red_state;
 
 unsigned rc_last_time;
 unsigned rc_state;
 unsigned long rc_command;
 unsigned state;
 unsigned data_counter;
-
-void Wait (unsigned int time) {
-	unsigned int i;
-	while (time--) {
-		i = 1000;
-		while (i--) { Nop (); } // unknown delay
-	}
-}
-
-void StatusLED (unsigned status) { // Yellow color (for some reason)
-	if (status) {
-		LATCbits.LATC4 = 0; // on
-	} else {
-		LATCbits.LATC4 = 1; // off
-	}
-}
-
-void LEDs_Init (void) {
-	StatusLED (1);
-	Wait (1000);
-	StatusLED (0);
-	Wait (1000);
-}
 
 void Init_CLK (void) {
 	// CLKDIV [2:0] = RCDIV = 0 (FRC = 8MHz)
@@ -54,7 +29,7 @@ void Init_CLK (void) {
 	OSCCONbits.OSWEN = 1;
 }
 
-void T1_Init(void) {
+void T1_Init  (void) {
 	TMR1            = 0;           // clear timer1 register
 	PR1             = TMR1_PERIOD; // set period1 register
 	T1CONbits.TSYNC = 0; // 
@@ -67,7 +42,7 @@ void T1_Init(void) {
 	T1CONbits.TON   = 1; // start the timer
 }
 
-void T3_Init(void) {
+void T3_Init  (void) {
 	T2CONbits.T32   = 0;
 	T3CONbits.TCKPS = TMR3_PRE;
 	T3CONbits.TCS   = 0; // set internal clock source
@@ -113,16 +88,6 @@ void TestPorts (void) {
 }
 */
 
-unsigned int I2C_Init (void) {
-//	TRISBbits.TRISB2 = 0; // on SDA2
-	I2C2BRG = 39; // 100KHz
-	I2C2CON = 0x1200;
-	I2C2RCV = 0x0000;
-	I2C2TRN = 0x0000;
-	// Now we can enable the peripheral
-	I2C2CON = 0x9200;
-}
-
 void I2C_wait_for_idle (void) {
 	while (I2C2STATbits.TRSTAT); // Wait for bus Idle
 }
@@ -134,7 +99,7 @@ void I2C_write (unsigned char data) {
 }
 
 void I2C_ByteWrite (unsigned char a0, unsigned char a1, unsigned char d) {
-	unsigned int i;
+	unsigned i;
 	I2C_wait_for_idle ();
 	I2C2CONbits.SEN = 1; while (I2C2CONbits.SEN); // Start
 	I2C_write (a0); // 7-bit address + rw=0 (write)
@@ -234,6 +199,18 @@ void I2C_Read_SD_Write (unsigned char a0, unsigned char a1, unsigned char length
 	for (i = 0; i < 100; i++) { }
 }
 
+void I2C_Init (void) {
+//	TRISBbits.TRISB2 = 0; // on SDA2
+	I2C2BRG = 39; // 100KHz
+	I2C2CON = 0x1200;
+	I2C2RCV = 0x0000;
+	I2C2TRN = 0x0000;
+	// Now we can enable the peripheral
+	I2C2CON = 0x9200;
+
+	I2C_Read (I2C_ACC, ACC_STATUS, 1); // Read ACC to test I2C
+}
+
 void ACC_Start (void) {
 	// CTRL_REG1 [1] = ACTIVE = 0
 	I2C_ByteWrite (I2C_ACC, ACC_CTRL_REG1, 0x00);
@@ -325,7 +302,7 @@ unsigned long RC_StateMachine (void) {
     return 0;
 }
 
-void ADC_Init (void) {
+/* void ADC_Init (void) {
     // Select how conversion results are
     // presented in the buffer
     AD1CON1bits.FORM = 0; // Integer (0000 00dd dddd dddd)
@@ -359,6 +336,7 @@ void ADC_Init (void) {
 //    AD1CON1bits.SAMP = 1;
 //    AD1CON1bits.ASAM = 1; // Sampling begins immediately after last conversion completes. SAMP bit is auto-set.
 }
+*/
 
 void Init_Ports (void) {
 	// SD_DO   <-- RP22, RC6    MISO
@@ -376,7 +354,9 @@ void Init_Ports (void) {
 	// RA1 = test
 	TRISA = 0xFFFD;
 	// RB5 = IRSD
-	// RB2 = SDA2 -- I2C bug workaround
+	// RB2 = SDA2
+	TRISB = 0xFFDB; // I2C bug workaround
+	TRISB = 0xFFDF;
 	TRISB = 0xFFDB;
 	// RC4 = Status LED
 	// RC9 = SD_CS
@@ -429,19 +409,21 @@ void __attribute__((__interrupt__)) _IC1Interrupt (void) {
 	unsigned i, j;
 	tmp_command = RC_StateMachine ();
 	if (tmp_command) {
-		if (tmp_command == 0x007FE11E) {
-			StatusLED (1);
-			Wait (500);
-			StatusLED (0);
-			Wait (500);
-			StatusLED (1);
+		if (tmp_command == 0x007FE11E) { // PLAY
 			SD_dump ();
-			StatusLED (0);
-		} else if (tmp_command == 0x007FB44B) {
-//			StatusLED (1);
-			data_counter = 0;
+			StatusShow (2, 2); // Morse: A .-
+		} else if (tmp_command == 0x007FB44B) { // 0
+//			data_counter = 0;
 			SD_write_head ();
-			ACC_Start ();
+			for (j = 0; j < 100; j++) {
+				for (i = 0; i < 255; i++) {
+					SD_write_data (i);
+				}
+				SD_write_crc ();
+			}
+			SD_write_tail ();
+			StatusShow (1, 4); // Morse: B -...
+//			ACC_Start ();
 		}
 	}
 	IFS0bits.IC1IF = 0; // clear IC1 interrupt flag
@@ -505,17 +487,12 @@ void __attribute__((__interrupt__)) _INT1Interrupt (void) {
 int main(int argc, char** argv) {
 	Init_CLK ();
 	Init_Ports ();
-	//	unsigned i, j;
+	I2C_Init ();
 	T3_Init ();
 	IC1_Init ();
-	I2C_Init ();
 	U1_Init ();
 	SD_Init ();
-//    T1_Init ();
-//    ADC_Init ();
-	StatusLED (1);
-	Wait (1000);
-	StatusLED (0);
+	StatusShow (0, 1); // Morse: E .
 	RC_StateMachine_Init ();
 	while (1) Idle ();
 	return (0); // EXIT_SUCCESS);

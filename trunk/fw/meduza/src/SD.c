@@ -187,7 +187,7 @@ void SD_dump (void) {
 */
 	SD_CMD_Send (0x5200, 0x0080, 0x00e1); // CMD18 + Addr:0x00008000
 
-	for (i = 0; i < 600; i++) {
+	for (i = 0; i < 10000; i++) {
 		for (j = 0; j < 1000; j++) {
 			while (SPI1STATbits.SPITBF); // while TX fifo is full
 			SPI1BUF = 0xFFFF;
