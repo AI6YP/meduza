@@ -220,8 +220,7 @@ void SD_dump (void) {
 	SPI2TRASH ();
 }
 
-
-void SD_write (void) {
+void SD_write_head (void) {
 	unsigned i;
 	SD_CMD_Send (0x5900, 0x0080, 0x0003); // CMD25 + Addr:0x00008000
 
@@ -234,22 +233,27 @@ void SD_write (void) {
 	SPI2UART ();
 
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFCAD; // data token
+}
 
-	for (i = 0; i < 255; i++) {
-		while (SPI1STATbits.SPITBF); SPI1BUF = i;
-		while (SPI1STATbits.SPIBEC); // TX buffer is empty
-		while (SPI1STATbits.SRMPT == 0); // SR is empty
-		SPI2TRASH ();
-	}
+void SD_write_data (unsigned dat) { // call 255 times
+	while (SPI1STATbits.SPITBF); SPI1BUF = dat;
+	while (SPI1STATbits.SPIBEC); // TX buffer is empty
+	while (SPI1STATbits.SRMPT == 0); // SR is empty
+	SPI2TRASH ();
+}
 
+void SD_write_crc  (void) {
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0x0000; // last byte + fake CRC start
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0x00FF; // fake CRC end + pause
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
 	while (SPI1STATbits.SPIBEC); // TX buffer is empty
 	while (SPI1STATbits.SRMPT == 0); // SR is empty
-	SPI2UART ();
+	SPI2TRASH ();
+}
 
+void SD_write_tail (void) {
+	unsigned i;
 	for (i = 0; i < 16384; i++) {
 		while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
 		while (SPI1STATbits.SPIBEC); // TX buffer is empty
