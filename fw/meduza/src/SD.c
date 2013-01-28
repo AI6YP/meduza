@@ -185,7 +185,7 @@ void SD_dump (void) {
         }
     }
 */
-	SD_CMD_Send (0x5200, 0x0080, 0x00e1); // CMD18 + Addr:0x00008000
+	SD_CMD_Send (0x5200, 0x0040, 0x00e1); // CMD18 + Addr:0x00004000
 
 	for (i = 0; i < 100; i++) {
 		for (j = 0; j < 1000; j++) {
@@ -222,7 +222,7 @@ void SD_dump (void) {
 
 void SD_write_head (unsigned offset) { // 0x0003
 	unsigned i;
-	SD_CMD_Send (0x5900, 0x0080, offset); // CMD25 + Addr:0x00008000
+	SD_CMD_Send (0x5900, 0x0040, offset << 8); // CMD25 + Addr:0x00004000
 
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
@@ -230,7 +230,7 @@ void SD_write_head (unsigned offset) { // 0x0003
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
 	while (SPI1STATbits.SPIBEC); // TX buffer is empty
 	while (SPI1STATbits.SRMPT == 0); // SR is empty
-	SPI2UART ();
+	SPI2TRASH ();
 
 	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFCAD; // data token
 }
