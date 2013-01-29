@@ -17,6 +17,7 @@ unsigned rc_state;
 unsigned long rc_command;
 unsigned state;
 unsigned data_counter;
+unsigned status; // StatusLED state
 
 void Init_CLK (void) {
 	// CLKDIV [2:0] = RCDIV = 0 (FRC = 8MHz)
@@ -413,17 +414,21 @@ void __attribute__((__interrupt__)) _IC1Interrupt (void) {
 			SD_dump ();
 			StatusShow (2, 2); // Morse: A .-
 		} else if (tmp_command == 0x007FB44B) { // 0
-//			data_counter = 0;
-			SD_write_head (j);
+			SD_write_head (0);
 			for (j = 0; j < 100; j++) {
-				for (i = 0; i < 255; i++) {
-					SD_write_data (dat++);
+				SD_write_start_token ();
+				for (i = 0; i < 256; i++) {
+					SD_write_data (dat--);
 				}
 				SD_write_crc ();
 			}
-			SD_write_tail ();
+			SD_write_stop_token ();
 			StatusShow (1, 4); // Morse: B -...
-//			ACC_Start ();
+		} else if (tmp_command == 0x007F9867) { // 1
+//			StatusShow (5, 4); // Morse: С -.-.
+			SD_write_head (0);
+			data_counter = 0;
+			ACC_Start ();
 		}
 	}
 	IFS0bits.IC1IF = 0; // clear IC1 interrupt flag
@@ -467,21 +472,32 @@ void __attribute__((__interrupt__)) _ADC1Interrupt(void) {
 
 void __attribute__((__interrupt__)) _INT1Interrupt (void) {
 	unsigned i;
-	I2C_Read_SD_Write (I2C_ACC, ACC_STATUS, 192);
-	for (i = 0; i < 63; i++) {
-		SD_write_data (0x55);
+	
+	SD_write_start_token ();
+
+	I2C_Read_SD_Write (I2C_ACC, 1, 192);
+
+	for (i = 0; i < 64; i++) { // dummy 0s
+		SD_write_data (0);
 	}
+
 	SD_write_crc ();
 	
-	IFS1bits.INT1IF = 0; // Reset INT1 flag
 	data_counter++;
-	if (data_counter >= 1000) {
-		SD_write_tail ();
-		ACC_Stop ();
-		StatusLED (0);
+
+	StatusLED (status);
+	if (status) {
+		status = 0;
 	} else {
-		StatusLED (1);
+		status = 1;
 	}
+
+	if (data_counter >= 100) {
+		ACC_Stop ();
+		SD_write_stop_token ();
+	}
+
+	IFS1bits.INT1IF = 0; // Reset INT1 flag
 }
 
 int main(int argc, char** argv) {
