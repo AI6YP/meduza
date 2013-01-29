@@ -224,36 +224,33 @@ void SD_write_head (unsigned offset) { // 0x0003
 	unsigned i;
 	SD_CMD_Send (0x5900, 0x0040, offset << 8); // CMD25 + Addr:0x00004000
 
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
+	for (i = 0; i < 4; i++) {
+		while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
+		SPI2TRASH ();
+	}
 	while (SPI1STATbits.SPIBEC); // TX buffer is empty
 	while (SPI1STATbits.SRMPT == 0); // SR is empty
 	SPI2TRASH ();
-
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFCAD; // data token
 }
 
-void SD_write_data (unsigned dat) { // call 255 times
+void SD_write_start_token (void) {
+	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFC; // last FF byte + "Start Tran token = FC"
+}
+
+void SD_write_data        (unsigned dat) { // call 256 times
 	while (SPI1STATbits.SPITBF); SPI1BUF = dat;
 	while (SPI1STATbits.SPIBEC); // TX buffer is empty
 	while (SPI1STATbits.SRMPT == 0); // SR is empty
 	SPI2TRASH ();
 }
 
-void SD_write_crc  (void) {
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0x0000; // last byte + fake CRC start
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0x00FF; // fake CRC end + pause
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
-	while (SPI1STATbits.SPIBEC); // TX buffer is empty
-	while (SPI1STATbits.SRMPT == 0); // SR is empty
-	SPI2TRASH ();
-}
-
-void SD_write_tail (void) {
+void SD_write_crc         (void) {
 	unsigned i;
+	for (i = 0; i < 4; i++) { // fake CRC + 3 pause words
+		while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF;
+		SPI2TRASH ();
+	}
+
 	for (i = 0; i < 16384; i++) {
 		while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
 		while (SPI1STATbits.SPIBEC); // TX buffer is empty
@@ -261,9 +258,16 @@ void SD_write_tail (void) {
 		if (SPI1BUF == 0xFFFF) { break; }
 		SPI2TRASH ();
 	}
+}
 
-	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFDFF; // stop tran
+void SD_write_stop_token  (void) {
+	unsigned i;
+	while (SPI1STATbits.SPITBF); SPI1BUF = 0xFDFF; // stop tran token = FD + pause byte
 
+	for (i = 0; i < 4; i++) {
+		while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
+		SPI2TRASH ();
+	}
 	for (i = 0; i < 16384; i++) {
 		while (SPI1STATbits.SPITBF); SPI1BUF = 0xFFFF; // pause
 		while (SPI1STATbits.SPIBEC); // TX buffer is empty
