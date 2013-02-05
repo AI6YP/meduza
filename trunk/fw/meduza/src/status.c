@@ -4,7 +4,10 @@
  */
 
 #include "status.h"
-#include <p24Fxxxx.h>
+#include <xc.h>
+#include <stdint.h>          /* For uint32_t definition */
+#include <stdbool.h>         /* For true/false definition */
+// #include <p24Fxxxx.h>
 #include "config.h"
 
 // StatusLED constants
