@@ -2,7 +2,10 @@
  * $Id$
  */
 
-#include <p24Fxxxx.h>
+#include <xc.h>
+#include <stdint.h>          /* For uint32_t definition */
+#include <stdbool.h>         /* For true/false definition */
+// #include <p24Fxxxx.h>
 
 void BYTE2UART (int dat) {
 	while (U1STAbits.UTXBF);
@@ -169,7 +172,7 @@ void SD_Init (void) {
     }
 */
 
-void SD_dump (void) {
+void SD_dump (unsigned length) {
 	unsigned i, j, k, dat, tmp;
 	unsigned code_table [16] = {
 		0xFF, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F,
@@ -187,7 +190,7 @@ void SD_dump (void) {
 */
 	SD_CMD_Send (0x5200, 0x0040, 0x00e1); // CMD18 + Addr:0x00004000
 
-	for (i = 0; i < 100; i++) {
+	for (i = 0; i < length; i++) {
 		for (j = 0; j < 1000; j++) {
 			while (SPI1STATbits.SPITBF); // while TX fifo is full
 			SPI1BUF = 0xFFFF;
