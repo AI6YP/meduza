@@ -181,10 +181,10 @@ void I2C_Read_Head (unsigned char a0, unsigned char a1) {
 	}
 }
 
-unsigned I2C_Read_Body (void) {
+unsigned I2C_Read_Body (unsigned acc) {
 	unsigned hi, lo;
 	lo = I2C_ByteRead (0);
-	hi = I2C_ByteRead (0);
+	hi = I2C_ByteRead (acc);
 	return (hi << 8) | lo;
 }
 
@@ -251,6 +251,8 @@ void I2C_Init (void) {
 	I2C_Read (I2C_ACC, ACC_STATUS, 1); // Read ACC to test I2C
 }
 
+unsigned ACC_state = 0;
+
 void ACC_Start (void) {
 	unsigned tmp;
 	// CTRL_REG1 [1] = ACTIVE = 0
@@ -262,8 +264,8 @@ void ACC_Start (void) {
 //	I2C_ByteWrite (I2C_ACC, ACC_F_SETUP,   (0x00));
 
 	// F_SETUP [7:6] = F_MODE = 2 (Fill Mode)
-	// F_SETUP [5:0] = F_WMRK = 2
-	I2C_ByteWrite (I2C_ACC, ACC_F_SETUP,   (0x80 | 0x02));
+	// F_SETUP [5:0] = F_WMRK = 1
+	I2C_ByteWrite (I2C_ACC, ACC_F_SETUP,   (0x80 | 0x01));
 
 	// CTRL_REG4 [6] = INT_EN_FIFO = 1
 	I2C_ByteWrite (I2C_ACC, ACC_CTRL_REG4, 0x40);
@@ -293,13 +295,34 @@ void ACC_Stop (void) {
 	I2C_ByteWrite (I2C_ACC, ACC_CTRL_REG1, 0x00);
 }
 
-unsigned ACC_Read (unsigned count) {
-	unsigned dat;
+unsigned ACC_Read (double count) {
+	unsigned dat, i, tmp;
 	if (count == 0) {
 		ACC_Start ();
 	}
-	while (!PORTCbits.RC0) { }
-	dat = I2C_Read_Body ();
+	if (ACC_state == 0) { // x
+		while (PORTCbits.RC0) { }
+		while (!PORTCbits.RC0) { }
+		// start
+		dat = I2C_Read_Body (0);
+		ACC_state = 1;
+		return dat;
+	}
+	if (ACC_state == 1) { // y
+		dat = I2C_Read_Body (0);
+		ACC_state = 2;
+		return dat;
+	}
+	// z
+	dat = I2C_Read_Body (1);
+	// stop
+	I2C2CONbits.PEN = 1; while (I2C1CONbits.PEN);
+	I2C_wait_for_idle ();
+	for (i = 0; i < 10; i++) { }
+	// clean
+	I2C_Read_Head (I2C_ACC, ACC_STATUS);
+	tmp = I2C_ByteRead (0); // ACC_STATUS read
+	ACC_state = 0;
 	return dat;
 }
 
@@ -458,17 +481,18 @@ void Init_Ports (void) {
 
 void __attribute__((__interrupt__)) _IC1Interrupt   (void) {
 	unsigned long tmp_command;
-	unsigned i, j, dat = 0, count = 0;
+	unsigned i, j, dat = 0;
+	double count = 0;
 	tmp_command = RC_StateMachine ();
 	if (tmp_command) {
 		if (tmp_command == 0x007FE11E) { // PLAY
 			StatusShow (0b10, 2); // Morse: A .-
-			SD_dump (500);
+			SD_dump (1500);
 			StatusShow (0b10, 2); // Morse: A .-
 		} else if (tmp_command == 0x007FB44B) { // 0 - write regular pattern
 			StatusShow (0b0001, 4); // Morse: B -...
 			SD_write_head (0);
-			for (j = 0; j < 500; j++) {
+			for (j = 0; j < 100; j++) {
 				SD_write_start_token ();
 				for (i = 0; i < 256; i++) {
 					SD_write_data (dat++);
@@ -480,7 +504,7 @@ void __attribute__((__interrupt__)) _IC1Interrupt   (void) {
 		} else if (tmp_command == 0x007F9867) { // 1 - accelerometer to SD
 			StatusShow (0b1010, 4); // Morse: С -.-.
 			SD_write_head (0);
-			for (j = 0; j < 100; j++) {
+			for (j = 0; j < 1200; j++) {
 				SD_write_start_token ();
 				for (i = 0; i < 256; i++) {
 					dat = ACC_Read (count++);
