@@ -13,9 +13,14 @@ function f1 (file_in, num_of_elements, element_type)
 		[data_in, count_] = fread (fid_in, num_of_elements, element_type);
 	end
 	fclose (fid_in);
-
-	plot (data_in);
+	length = fix (rows (data_in) / 3);
+	data_in = resize (data_in, 3 * length, 1);
+	size (data_in)
+	data_in = reshape (data_in, 3, (length));
+	size (data_in)
+	range = (0:1:length-1) / 800;
+	plot (range, data_in (1,:), range, data_in (2,:), range, data_in (3,:));
 end %function
 
 %!demo
-%! f1 ('../logs/20130127_01.bin.f1', 500, "int16");
+%! f1 ('../logs/20130212_01.bin.f1', 30000, "int16");
