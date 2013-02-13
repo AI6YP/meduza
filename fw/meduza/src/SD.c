@@ -191,7 +191,7 @@ void SD_dump (unsigned length) {
 	SD_CMD_Send (0x5200, 0x0040, 0x00e1); // CMD18 + Addr:0x00004000
 
 	for (i = 0; i < length; i++) {
-		for (j = 0; j < 1000; j++) {
+		for (j = 0; j < 256; j++) {
 			while (SPI1STATbits.SPITBF); // while TX fifo is full
 			SPI1BUF = 0xFFFF;
 			while (SPI1STATbits.SRXMPT); // While Receive FIFO Empty bit (valid in Enhanced Buffer mode)
