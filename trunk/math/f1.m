@@ -23,4 +23,4 @@ function f1 (file_in, num_of_elements, element_type)
 end %function
 
 %!demo
-%! f1 ('../logs/20130212_01.bin.f1', 30000, "int16");
+%! f1 ('../logs/20130212_01.bin.f1', 300000, "int16");
