@@ -241,7 +241,7 @@ void I2C_Read_SD_Write (unsigned char a0, unsigned char a1, unsigned char length
 
 void I2C_Init (void) {
 //	TRISBbits.TRISB2 = 0; // on SDA2
-	I2C2BRG = 39; // 100KHz
+	I2C2BRG = 15; // 100KHz 157
 	I2C2CON = 0x1200;
 	I2C2RCV = 0x0000;
 	I2C2TRN = 0x0000;
@@ -295,7 +295,7 @@ void ACC_Stop (void) {
 	I2C_ByteWrite (I2C_ACC, ACC_CTRL_REG1, 0x00);
 }
 
-unsigned ACC_Read (double count) {
+unsigned ACC_Read (long count) {
 	unsigned dat, i, tmp;
 	if (count == 0) {
 		ACC_Start ();
@@ -303,7 +303,7 @@ unsigned ACC_Read (double count) {
 	if (ACC_state == 0) { // x
 		while (PORTCbits.RC0) { }
 		while (!PORTCbits.RC0) { }
-		// start
+
 		dat = I2C_Read_Body (0);
 		ACC_state = 1;
 		return dat;
@@ -311,6 +311,9 @@ unsigned ACC_Read (double count) {
 	if (ACC_state == 1) { // y
 		dat = I2C_Read_Body (0);
 		ACC_state = 2;
+
+		StatusLED (count & 512);
+
 		return dat;
 	}
 	// z
@@ -319,7 +322,7 @@ unsigned ACC_Read (double count) {
 	I2C2CONbits.PEN = 1; while (I2C1CONbits.PEN);
 	I2C_wait_for_idle ();
 	for (i = 0; i < 10; i++) { }
-	// clean
+	// clean start
 	I2C_Read_Head (I2C_ACC, ACC_STATUS);
 	tmp = I2C_ByteRead (0); // ACC_STATUS read
 	ACC_state = 0;
@@ -482,7 +485,7 @@ void Init_Ports (void) {
 void __attribute__((__interrupt__)) _IC1Interrupt   (void) {
 	unsigned long tmp_command;
 	unsigned i, j, dat = 0;
-	double count = 0;
+	long count = 0;
 	tmp_command = RC_StateMachine ();
 	if (tmp_command) {
 		if (tmp_command == 0x007FE11E) { // PLAY
@@ -513,6 +516,7 @@ void __attribute__((__interrupt__)) _IC1Interrupt   (void) {
 				SD_write_crc ();
 			}
 			SD_write_stop_token ();
+			count = 0;
 			StatusShow (0b1010, 4); // Morse: С -.-.
 		}
 	}
@@ -588,6 +592,7 @@ void __attribute__((__interrupt__)) _INT1Interrupt  (void) {
 int main (int argc, char** argv) {
 	Init_CLK ();
 	Init_Ports ();
+	StatusShow (0, 1); // Morse: E .
 	I2C_Init ();
 	T3_Init ();
 	IC1_Init ();
