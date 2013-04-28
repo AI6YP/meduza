@@ -6,6 +6,8 @@
 
 PIC24FJ32GA-004
 
+ID=3003
+
 == Board 2 ==
 
 PIC24FJ64GA-104
