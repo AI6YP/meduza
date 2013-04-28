@@ -4,9 +4,7 @@
 
 == Board 1 ==
 
-PIC24FJ32GA-004
-
-ID=3003
+PIC24FJ32GA-004 ID=3003
 
 == Board 2 ==
 
