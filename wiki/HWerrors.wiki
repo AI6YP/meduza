@@ -1,0 +1,9 @@
+#summary Diagnostic of HW errors
+
+= Introduction =
+
+On power-on time microcontroller will test certain features and report errors using Status LED and Morse code.
+
+http://liranuna.com/junk/morse.gif
+
+= Error Conditions =
