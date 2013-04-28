@@ -1,0 +1,11 @@
+#summary microcontroller options
+
+= Introduction =
+
+== Board 1 ==
+
+PIC24FJ32GA-004
+
+== Board 2 ==
+
+PIC24FJ64GA-104
