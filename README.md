@@ -1,6 +1,6 @@
 ## Meduza
 
-Miniature control/logger board. Part of Naut /nøyːt/ project.
+Miniature control/logger board. Part of the Naut /nøyːt/ project.
 
 ### PCB v1
 
