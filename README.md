@@ -9,7 +9,7 @@ Miniature control/logger board. Part of the Naut /nøyːt/ project.
 [Schematic (PDF)](eagle/meduza01/meduza01.pdf)
 
 #### Features
- * Microchip PIC24/dsPIC33 microcontroller [PIC24FJ64GA104](http://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en544252)
+ * Microchip microcontroller: [PIC24FJ64GA104](http://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en544252) / [DSPIC33EP128MC204](http://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en556386)
  * microSD card socket (up-to 32GB)
  * IRDA transceiver (2 Mibit/s) [TFDU6300](http://media.digikey.com/pdf/Data%20Sheets/Vishay%20Semiconductors/TFDU6300.pdf)
  * 3D Magnetometer [MAG3110L](http://cache.freescale.com/files/sensors/doc/data_sheet/MAG3110.pdf)
