@@ -18,4 +18,4 @@ Miniature control/logger board. Part of the Naut /nøyːt/ project.
  * temperature sensor [MCP9800](http://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en021183)
  * analog/digital IO for externals sensors
  * Inductive charging circuitry
- * 1-cell LiPo battery PMIC [MCP73831T](http://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en026002)
+ * 1-cell LiPo battery PMIC [MCP73831T](http://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en025112)
