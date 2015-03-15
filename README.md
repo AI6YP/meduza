@@ -6,7 +6,7 @@ Miniature control/logger board. Part of the Naut /nøyːt/ project.
 
 ![alt text](eagle/meduza01/images/P1040171_crop_small.jpg "Meduza PCB")
 
-[Schematic](eagle/meduza01/meduza01.pdf)
+[Schematic (PDF)](eagle/meduza01/meduza01.pdf)
 
 #### Features
  * Microchip PIC24/dsPIC33 microcontroller
