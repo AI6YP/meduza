@@ -18,4 +18,4 @@ Miniature control/logger board. Part of the Naut /nøyːt/ project.
  * 1-cell LiPo battery PMIC [MCP73831T](http://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en025112)
  * microSD card socket (up-to 32GB)
  * analog/digital IO for externals sensors
- * Inductive charging circuitry
+ * Inductive charging circuitry (external)
