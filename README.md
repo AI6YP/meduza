@@ -11,7 +11,7 @@ Miniature control/logger board. Part of the Naut /nøyːt/ project.
 #### Features
  * Microchip PIC24/dsPIC33 microcontroller
  * microSD card socket (up-to 32GB)
- * IRDA transceiver (2 Mibit/s)
+ * IRDA transceiver (2 Mibit/s) [TFDU6300](http://media.digikey.com/pdf/Data%20Sheets/Vishay%20Semiconductors/TFDU6300.pdf)
  * 3D Magnetometer [MAG3110L](http://cache.freescale.com/files/sensors/doc/data_sheet/MAG3110.pdf)
  * 3D Accelerometer [MMA8452QL](http://cache.freescale.com/files/sensors/doc/data_sheet/MMA8452Q.pdf)
  * 3D Giro [L3G4200D](http://www.st.com/web/en/resource/technical/document/datasheet/CD00265057.pdf)
