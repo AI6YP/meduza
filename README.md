@@ -12,10 +12,10 @@ Miniature control/logger board. Part of the Naut /nøyːt/ project.
  * Microchip PIC24/dsPIC33 microcontroller
  * microSD card socket (up-to 32GB)
  * IRDA transceiver (2 Mibit/s)
- * 3D Magnetometer
- * 3D Accelerometer
- * 3D Giro
- * temperature sensor
+ * 3D Magnetometer [MAG3110L](http://cache.freescale.com/files/sensors/doc/data_sheet/MAG3110.pdf)
+ * 3D Accelerometer (MMA8452QL)
+ * 3D Giro (L3G4200D)
+ * temperature sensor (MCP9800)
  * analog/digital IO for externals sensors
  * Inductive charging circuitry
  * 1-cell LiPo battery
