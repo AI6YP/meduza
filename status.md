@@ -31,6 +31,6 @@
 
 
 ### v1.06
-![alt text](img/m03.jpg "Meduza v1.06")
+![alt text](img/m06.jpg "Meduza v1.06")
 
 * [PIC24FJ32GA004](http://ww1.microchip.com/downloads/en/DeviceDoc/39881e.pdf) - [3003h Errata](http://ww1.microchip.com/downloads/en/DeviceDoc/80000470h.pdf)
